@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  sysmon:
+    build: .
+    container_name: linux-sysmon
+    ports:
+      - "8000:8000"
+    environment:
+      - SYSMON_API_KEY=${SYSMON_API_KEY:-change-me}
+      - SYSMON_CPU_INTERVAL=0.5
+      - SYSMON_ALLOWED_SERVICES=${SYSMON_ALLOWED_SERVICES:-}
+      - SYSMON_MAX_LOG_LINES=500
+    # --- Host visibility settings ---
+    # By default a container has its OWN pid namespace, so psutil inside
+    # the container will only ever see the container's own processes
+    # (basically just this app). To monitor the HOST's CPU/RAM/disk/
+    # processes, you need both of the following:
+    pid: host          # share the host's PID namespace
+    privileged: false  # true only if you also need to kill/restart
+                        # processes owned by other users on the host --
+                        # weigh this against the security cost deliberately
+    volumes:
+      - /proc:/host/proc:ro   # optional: alternate proc mount if you
+                               # want to point psutil at /host/proc instead
+                               # of relying on --pid=host (see README)
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # only if you later
+                               # want container-level metrics too; remove
+                               # if unused, it's a sensitive mount
+    restart: unless-stopped
